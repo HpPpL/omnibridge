@@ -77,16 +77,18 @@ TELEGRAM_CHAT_ID=123456789
 реального VK-токена: `VK_MOCK=1 npm run dialogs/backfill/deliver` — фейковая
 переписка приедет в твоего бота. Выбор собеседников — через `VK_DIALOGS`.
 
-### Управляющий бот (меню)
+### Управляющий бот и доставка (`serve`)
 
 ```bash
-VK_MOCK=1 npm run bot      # держит бота: меню, список диалогов, переключение отслеживания
+VK_MOCK=1 npm run serve    # ВСЁ вместе: бот-панель + live-доставка новых
+VK_MOCK=1 npm run bot      # только панель (без доставки)
 ```
 
-Команды (видны в меню «/»): `/dialogs` — список диалогов с переключателями
-отслеживания (✅/⬜) и просмотром переписки (👁), `/tracked` — кто отслеживается.
-Нажатие на имя включает/выключает диалог (тот же флаг, что читают `deliver`/`live`).
-Управление разрешено только владельцу — `TELEGRAM_CHAT_ID`.
+`serve` — основной режим: держит управляющего бота и одновременно слушает новые
+сообщения. Команды (видны в меню «/»): `/dialogs` — список диалогов с
+переключателями (✅/⬜) и просмотром переписки (👁), `/tracked` — кто отслеживается.
+Включил диалог в боте — его новые сообщения сразу начинают доставляться в чат
+владельца (`TELEGRAM_CHAT_ID`); выбор меняется на лету. Управление — только у владельца.
 
 `npm run live` держит сессию и на каждое новое сообщение из выбранных диалогов:
 сохраняет в хранилище (идемпотентно) и доставляет в назначения. Если Telegram не
@@ -134,8 +136,9 @@ src/
   sources/vk-user/     личный аккаунт ВК: api, client, mock, live (long poll + мок)
   sources/vk.ts        сообщество ВК (bots long poll)
   destinations/        Telegram, Console (далее Slack, Discord)
-  telegram/client.ts   Bot API: long polling, кнопки (для управляющего бота)
-  commands/            CLI: list-dialogs, backfill, export, deliver, live, bot, vk-auth, vk-token
+  telegram/client.ts   Bot API: long polling, кнопки
+  telegram/control.ts  логика бота (меню, переключатели) — общая для bot и serve
+  commands/            CLI: list-dialogs, backfill, export, deliver, live, bot, serve, vk-auth, vk-token
 ```
 
 ## TODO
