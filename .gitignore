@@ -8,3 +8,8 @@ dist-ssr
 !.env.example
 *.log
 .vite
+
+# SQLite-хранилище
+*.db
+*.db-shm
+*.db-wal

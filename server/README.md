@@ -1,44 +1,69 @@
 # OmniBridge · server
 
-Бэкенд-пайплайн: опрашивает источники, нормализует сообщения и доставляет в
-назначения. Сейчас собран сквозной маршрут **ВКонтакте → Telegram**.
+Бэкенд-пайплайн: держит сессию аккаунта, выгружает/слушает сообщения, нормализует
+и доставляет в выбранный канал.
 
 ```
-Источник (VK Long Poll) ──▶ UnifiedMessage ──▶ Назначение (Telegram Bot API)
-        sources/vk.ts          core/types.ts        destinations/telegram.ts
-                              core/pipeline.ts (роутинг по маршрутам)
+Источник ──▶ UnifiedMessage ──▶ хранилище (SQLite) ──▶ Назначение
+                core/types.ts        storage/             destinations/
+                              core/pipeline.ts (роутинг)
 ```
 
-## Запуск
+Два источника:
+
+- **Личный аккаунт ВК** (`sources/vk-user/`) — личные сообщения по user-токену:
+  список диалогов → бэкфилл истории выбранных → live-приём новых. **В работе.**
+- **Сообщество ВК** (`sources/vk.ts`) — сообщения сообщества через bots long poll.
+
+## Личные сообщения ВК (основной сценарий)
+
+Доступ — по **user-токену** с правами `messages` (получаешь сам и вставляешь;
+вход мы не автоматизируем). Реализуется по стадиям:
+
+| Стадия | Что | Статус |
+|---|---|---|
+| 1. Discovery | список диалогов → SQLite (`npm run dialogs`) | ✅ готово |
+| 2. Backfill | постраничная выгрузка истории выбранных диалогов | ⏳ |
+| 3. Live | User Long Poll, новые сообщения → доставка | ⏳ |
 
 ```bash
-cd server
-npm install
-cp .env.example .env      # заполнить токены VK и Telegram
-npm run dev               # авто-перезапуск при правках
+cd server && npm install
+cp .env.example .env          # вставить VK_USER_TOKEN
+npm run dialogs               # показать диалоги и их peer_id, записать в БД
+VK_DIALOGS=12345,-678 npm run dialogs   # отметить выбранные
 ```
 
-Проверка живости: `curl localhost:8787/health`.
+Хранилище — SQLite через встроенный `node:sqlite` (флаг `--experimental-sqlite`
+уже в npm-скриптах), без внешних зависимостей. Путь — `DB_PATH` (по умолч. `omnibridge.db`).
 
-## Переменные окружения
+## Сообщество ВК → Telegram
 
-См. `.env.example`. Нужны: `VK_GROUP_ID`, `VK_TOKEN` (источник),
-`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` (назначение).
+```bash
+cp .env.example .env          # VK_GROUP_ID, VK_TOKEN, TELEGRAM_*
+npm run dev                   # health: curl localhost:8787/health
+```
 
-> Чтобы VK слал события, в сообществе включи **Long Poll API** (последняя версия)
-> и тип события «Входящее сообщение», а у токена должны быть права на сообщения.
-> Telegram-бот должен состоять в целевом чате/канале.
+> Для сообщества: включи **Long Poll API** и событие «Входящее сообщение», токен —
+> с правами на сообщения. Telegram-бот должен состоять в целевом чате/канале.
 
-## Как добавить платформу
+## Структура
 
-- **Источник** — класс в `src/sources/`, реализующий `Source` (`start`/`stop`),
-  приводящий сырой объект к `UnifiedMessage`.
-- **Назначение** — класс в `src/destinations/`, реализующий `Destination.send`.
-- Зарегистрировать экземпляр и маршрут в `src/index.ts`.
+```
+src/
+  core/types.ts        UnifiedMessage, Dialog
+  core/pipeline.ts     роутинг источник→назначение
+  storage/db.ts        схема SQLite
+  storage/repo.ts      доступ к данным (диалоги, сообщения, курсоры)
+  sources/vk-user/     личный аккаунт ВК (client.ts + session — в работе)
+  sources/vk.ts        сообщество ВК (bots long poll)
+  destinations/        Telegram (далее Slack, Discord)
+  commands/            CLI: list-dialogs
+```
 
 ## TODO
 
-- Сборка пайплайна из конфига UI (а не из env).
+- Стадии 2–3 источника личных сообщений (backfill + live `VkUserSession`).
+- Привязка выбора диалогов к UI (сейчас через `VK_DIALOGS`).
 - Источники: Instagram, WhatsApp. Назначения: Slack, Discord.
-- Передача вложений (сейчас считается только их количество).
-- Очередь и ретраи доставки, хранение секретов в БД зашифрованными.
+- Передача вложений (сейчас считается только количество), очередь и ретраи доставки.
+- Хранение токенов зашифрованными.
