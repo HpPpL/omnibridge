@@ -9,6 +9,7 @@
     "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
     "dialogs": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/list-dialogs.ts",
     "vk-auth": "node --env-file-if-exists=.env --import tsx src/commands/vk-auth.ts",
+    "vk-token": "node --env-file-if-exists=.env --import tsx src/commands/vk-token.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
