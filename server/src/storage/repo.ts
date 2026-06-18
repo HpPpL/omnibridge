@@ -1,5 +1,18 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type { Dialog, UnifiedMessage } from '../core/types.js'
+import type { Attachment, Dialog, Direction, UnifiedMessage } from '../core/types.js'
+
+/** Сообщение в том виде, как оно лежит в хранилище (для экспорта/просмотра). */
+export interface StoredMessage {
+  messageId: string
+  direction: Direction
+  authorId: string
+  authorName?: string
+  text: string
+  attachments: Attachment[]
+  replyTo?: string
+  ts: string
+  deliveredTo: string[]
+}
 
 /**
  * Типизированный доступ к хранилищу: диалоги, сообщения, курсоры. Вся работа с
@@ -144,5 +157,51 @@ export class Repo {
          ON CONFLICT(account_id) DO UPDATE SET ts = excluded.ts`,
       )
       .run(accountId, ts)
+  }
+
+  countMessages(accountId: string, dialogId: string): number {
+    const row = this.db
+      .prepare('SELECT COUNT(*) AS n FROM messages WHERE account_id = ? AND dialog_id = ?')
+      .get(accountId, dialogId) as { n: number }
+    return row.n
+  }
+
+  /** Сообщения диалога в хронологическом порядке (для экспорта/просмотра). */
+  getMessages(accountId: string, dialogId: string): StoredMessage[] {
+    const rows = this.db
+      .prepare(
+        `SELECT message_id, direction, author_id, author_name, text, attachments, reply_to, ts, delivered_to
+         FROM messages WHERE account_id = ? AND dialog_id = ? ORDER BY ts ASC`,
+      )
+      .all(accountId, dialogId) as Array<{
+      message_id: string
+      direction: string
+      author_id: string
+      author_name: string | null
+      text: string
+      attachments: string
+      reply_to: string | null
+      ts: string
+      delivered_to: string
+    }>
+    return rows.map((r) => ({
+      messageId: r.message_id,
+      direction: r.direction as Direction,
+      authorId: r.author_id,
+      authorName: r.author_name ?? undefined,
+      text: r.text,
+      attachments: JSON.parse(r.attachments) as Attachment[],
+      replyTo: r.reply_to ?? undefined,
+      ts: r.ts,
+      deliveredTo: JSON.parse(r.delivered_to) as string[],
+    }))
+  }
+
+  /** Аккаунты, по которым есть данные (для команд без сетевого вызова). */
+  listAccounts(): string[] {
+    const rows = this.db.prepare('SELECT DISTINCT account_id FROM dialogs').all() as Array<{
+      account_id: string
+    }>
+    return rows.map((r) => r.account_id)
   }
 }

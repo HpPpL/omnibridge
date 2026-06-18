@@ -41,9 +41,26 @@ npm run vk-token -- --app <APP_ID>            # авто: localhost-ловец (
 
 | Стадия | Что | Статус |
 |---|---|---|
-| 1. Discovery | список диалогов → SQLite (`npm run dialogs`) | ✅ готово |
-| 2. Backfill | постраничная выгрузка истории выбранных диалогов | ⏳ |
+| 1. Discovery | список диалогов → SQLite (`npm run dialogs`) | ✅ |
+| 2. Backfill | постраничная выгрузка истории выбранных (`npm run backfill`) | ✅ |
 | 3. Live | User Long Poll, новые сообщения → доставка | ⏳ |
+
+### Мок-режим (отладка без токена)
+
+Доступ к личным сообщениям ВК официально не выдаёт (`messages` → `invalid scope`),
+поэтому стадии 2–3 отлаживаются на фейковых данных: `VK_MOCK=1` подменяет источник.
+
+```bash
+VK_MOCK=1 npm run dialogs                          # 3 мок-диалога → БД
+VK_MOCK=1 VK_DIALOGS=2001,2000000001 npm run dialogs   # выбрать
+VK_MOCK=1 npm run backfill                         # выгрузить историю в SQLite
+npm run export -- --dialog 2001                    # NDJSON в stdout
+npm run export -- --dialog 2001 --format json --out chat.json
+```
+
+Бэкфилл идемпотентен и возобновляем (курсор `backfill_cursor`): повторный запуск
+добавит только новое. Экспорт читает из SQLite офлайн; формат записи — нормализованный
+`StoredMessage` (направление, автор, текст, вложения, время, отметки доставки).
 
 ```bash
 cd server && npm install
@@ -75,12 +92,13 @@ npm run dev                   # health: curl localhost:8787/health
 src/
   core/types.ts        UnifiedMessage, Dialog
   core/pipeline.ts     роутинг источник→назначение
+  core/backfill.ts     постраничная выгрузка истории (курсор, идемпотентность)
   storage/db.ts        схема SQLite
   storage/repo.ts      доступ к данным (диалоги, сообщения, курсоры)
-  sources/vk-user/     личный аккаунт ВК (client.ts + session — в работе)
+  sources/vk-user/     личный аккаунт ВК: api (контракт+фабрика), client, mock
   sources/vk.ts        сообщество ВК (bots long poll)
   destinations/        Telegram (далее Slack, Discord)
-  commands/            CLI: list-dialogs
+  commands/            CLI: list-dialogs, backfill, export, vk-auth, vk-token
 ```
 
 ## TODO

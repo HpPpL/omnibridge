@@ -8,6 +8,8 @@
     "dev": "node --watch --env-file-if-exists=.env --import tsx src/index.ts",
     "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
     "dialogs": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/list-dialogs.ts",
+    "backfill": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/backfill.ts",
+    "export": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/export.ts",
     "vk-auth": "node --env-file-if-exists=.env --import tsx src/commands/vk-auth.ts",
     "vk-token": "node --env-file-if-exists=.env --import tsx src/commands/vk-token.ts",
     "typecheck": "tsc --noEmit"

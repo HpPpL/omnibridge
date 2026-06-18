@@ -1,6 +1,7 @@
 import { openDb } from '../storage/db.js'
 import { Repo } from '../storage/repo.js'
-import { VkClient, VkApiError } from '../sources/vk-user/client.js'
+import { VkApiError } from '../sources/vk-user/client.js'
+import { createVkClient } from '../sources/vk-user/api.js'
 
 /**
  * Стадия 1 (discovery): по user-токену забирает список диалогов аккаунта,
@@ -10,16 +11,10 @@ import { VkClient, VkApiError } from '../sources/vk-user/client.js'
  *   npm run dialogs
  */
 async function main(): Promise<void> {
-  const token = process.env.VK_USER_TOKEN
-  if (!token) {
-    console.error('✖ Не задан VK_USER_TOKEN. Скопируй server/.env.example → server/.env.')
-    process.exit(1)
-  }
-
   const dbPath = process.env.DB_PATH ?? 'omnibridge.db'
   const limit = Number(process.env.VK_DIALOGS_LIMIT ?? 50)
 
-  const client = new VkClient(token)
+  const client = createVkClient()
   const db = openDb(dbPath)
   const repo = new Repo(db)
 

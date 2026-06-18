@@ -1,4 +1,5 @@
-import type { Dialog, PeerType } from '../../core/types.js'
+import type { Dialog, PeerType, UnifiedMessage } from '../../core/types.js'
+import type { HistoryPage, VkApi } from './api.js'
 
 const API = 'https://api.vk.com/method'
 const DEFAULT_VERSION = '5.199'
@@ -54,7 +55,7 @@ export interface VkHistoryMessage {
  * Тонкий клиент VK для личного аккаунта по user-токену. Знает только про
  * HTTP/формат VK; доменную логику (что выгружать) держит вызывающий код.
  */
-export class VkClient {
+export class VkClient implements VkApi {
   constructor(
     private readonly token: string,
     private readonly version = DEFAULT_VERSION,
@@ -109,6 +110,42 @@ export class VkClient {
       }
     })
     return { dialogs, total: r.count }
+  }
+
+  /** Страница истории диалога (messages.getHistory), нормализованная. */
+  async getHistory(
+    accountId: string,
+    dialogId: string,
+    opts: { offset: number; count: number },
+  ): Promise<HistoryPage> {
+    const r = await this.api<{ count: number; items: VkHistoryMessage[] }>('messages.getHistory', {
+      peer_id: dialogId,
+      offset: opts.offset,
+      count: opts.count,
+    })
+    const messages = r.items.map((m) => normalizeHistory(accountId, dialogId, m))
+    return { messages, total: r.count }
+  }
+}
+
+function normalizeHistory(
+  accountId: string,
+  dialogId: string,
+  m: VkHistoryMessage,
+): UnifiedMessage {
+  return {
+    id: String(m.id),
+    source: 'vk',
+    sourceNodeId: accountId,
+    accountId,
+    dialogId,
+    direction: m.out ? 'out' : 'in',
+    author: { id: String(m.from_id) },
+    text: m.text ?? '',
+    attachments: (m.attachments ?? []).map((a) => ({ type: a.type })),
+    replyTo: m.reply_message?.id ? String(m.reply_message.id) : undefined,
+    receivedAt: new Date((m.date ?? 0) * 1000).toISOString(),
+    raw: m,
   }
 }
 
