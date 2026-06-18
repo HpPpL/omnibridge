@@ -28,10 +28,14 @@
 
 ```bash
 cd server && npm install
-cp .env.example .env          # вставить VK_USER_TOKEN
-npm run dialogs               # показать диалоги и их peer_id, записать в БД
+cp .env.example .env                    # вставить VK_USER_TOKEN
+npm run vk-auth -- <token>              # проверить: токен валиден? есть доступ к личке?
+npm run dialogs                         # показать диалоги и их peer_id, записать в БД
 VK_DIALOGS=12345,-678 npm run dialogs   # отметить выбранные
 ```
+
+`vk-auth` сообщает три исхода: токен недействителен · валиден, но без прав
+`messages` · валиден и доступ к личке есть (тогда `dialogs` заработает).
 
 Хранилище — SQLite через встроенный `node:sqlite` (флаг `--experimental-sqlite`
 уже в npm-скриптах), без внешних зависимостей. Путь — `DB_PATH` (по умолч. `omnibridge.db`).
