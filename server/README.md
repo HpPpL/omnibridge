@@ -56,8 +56,26 @@ VK_MOCK=1 VK_DIALOGS=2001,2000000001 npm run dialogs   # выбрать
 VK_MOCK=1 npm run backfill                         # выгрузить историю в SQLite
 npm run export -- --dialog 2001                    # NDJSON в stdout
 npm run export -- --dialog 2001 --format json --out chat.json
+VK_MOCK=1 npm run deliver                          # выгрузить сохранённую историю в бота
+VK_MOCK=1 npm run deliver -- --dialog 2002         # только один собеседник
 VK_MOCK=1 npm run live                             # эмуляция новых → сохранение + доставка
 ```
+
+### Доставка в Telegram-бота
+
+Чтобы слать в реального бота (а не в консоль), задай в `.env`:
+
+```bash
+# 1. Создай бота у @BotFather → получишь TELEGRAM_BOT_TOKEN
+# 2. Узнай id чата: напиши боту, открой
+#    https://api.telegram.org/bot<TOKEN>/getUpdates → возьми chat.id
+TELEGRAM_BOT_TOKEN=123456:ABC-...
+TELEGRAM_CHAT_ID=123456789
+```
+
+После этого `npm run deliver` и `npm run live` шлют в Telegram. Полный тест без
+реального VK-токена: `VK_MOCK=1 npm run dialogs/backfill/deliver` — фейковая
+переписка приедет в твоего бота. Выбор собеседников — через `VK_DIALOGS`.
 
 `npm run live` держит сессию и на каждое новое сообщение из выбранных диалогов:
 сохраняет в хранилище (идемпотентно) и доставляет в назначения. Если Telegram не
@@ -105,7 +123,7 @@ src/
   sources/vk-user/     личный аккаунт ВК: api, client, mock, live (long poll + мок)
   sources/vk.ts        сообщество ВК (bots long poll)
   destinations/        Telegram, Console (далее Slack, Discord)
-  commands/            CLI: list-dialogs, backfill, export, live, vk-auth, vk-token
+  commands/            CLI: list-dialogs, backfill, export, deliver, live, vk-auth, vk-token
 ```
 
 ## TODO
