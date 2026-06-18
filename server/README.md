@@ -43,7 +43,7 @@ npm run vk-token -- --app <APP_ID>            # авто: localhost-ловец (
 |---|---|---|
 | 1. Discovery | список диалогов → SQLite (`npm run dialogs`) | ✅ |
 | 2. Backfill | постраничная выгрузка истории выбранных (`npm run backfill`) | ✅ |
-| 3. Live | User Long Poll, новые сообщения → доставка | ⏳ |
+| 3. Live | User Long Poll, новые сообщения → доставка (`npm run live`) | ✅ |
 
 ### Мок-режим (отладка без токена)
 
@@ -56,7 +56,14 @@ VK_MOCK=1 VK_DIALOGS=2001,2000000001 npm run dialogs   # выбрать
 VK_MOCK=1 npm run backfill                         # выгрузить историю в SQLite
 npm run export -- --dialog 2001                    # NDJSON в stdout
 npm run export -- --dialog 2001 --format json --out chat.json
+VK_MOCK=1 npm run live                             # эмуляция новых → сохранение + доставка
 ```
+
+`npm run live` держит сессию и на каждое новое сообщение из выбранных диалогов:
+сохраняет в хранилище (идемпотентно) и доставляет в назначения. Если Telegram не
+настроен (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) — доставка идёт в консоль, отметки
+`delivered_to` всё равно проставляются. В мок-режиме источник эмитит несколько
+тестовых сообщений (`VK_MOCK_LIVE_COUNT`, `VK_MOCK_LIVE_INTERVAL_MS`) и завершается.
 
 Бэкфилл идемпотентен и возобновляем (курсор `backfill_cursor`): повторный запуск
 добавит только новое. Экспорт читает из SQLite офлайн; формат записи — нормализованный
@@ -95,10 +102,10 @@ src/
   core/backfill.ts     постраничная выгрузка истории (курсор, идемпотентность)
   storage/db.ts        схема SQLite
   storage/repo.ts      доступ к данным (диалоги, сообщения, курсоры)
-  sources/vk-user/     личный аккаунт ВК: api (контракт+фабрика), client, mock
+  sources/vk-user/     личный аккаунт ВК: api, client, mock, live (long poll + мок)
   sources/vk.ts        сообщество ВК (bots long poll)
-  destinations/        Telegram (далее Slack, Discord)
-  commands/            CLI: list-dialogs, backfill, export, vk-auth, vk-token
+  destinations/        Telegram, Console (далее Slack, Discord)
+  commands/            CLI: list-dialogs, backfill, export, live, vk-auth, vk-token
 ```
 
 ## TODO

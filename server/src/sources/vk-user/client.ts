@@ -126,6 +126,15 @@ export class VkClient implements VkApi {
     const messages = r.items.map((m) => normalizeHistory(accountId, dialogId, m))
     return { messages, total: r.count }
   }
+
+  /** Полные сообщения по id (messages.getById) — для live: по событию тянем тело. */
+  async getById(accountId: string, ids: string[]): Promise<UnifiedMessage[]> {
+    if (ids.length === 0) return []
+    const r = await this.api<{ items: VkHistoryMessage[] }>('messages.getById', {
+      message_ids: ids.join(','),
+    })
+    return r.items.map((m) => normalizeHistory(accountId, String(m.peer_id), m))
+  }
 }
 
 function normalizeHistory(

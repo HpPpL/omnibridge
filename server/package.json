@@ -10,6 +10,7 @@
     "dialogs": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/list-dialogs.ts",
     "backfill": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/backfill.ts",
     "export": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/export.ts",
+    "live": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/run.ts",
     "vk-auth": "node --env-file-if-exists=.env --import tsx src/commands/vk-auth.ts",
     "vk-token": "node --env-file-if-exists=.env --import tsx src/commands/vk-token.ts",
     "typecheck": "tsc --noEmit"
