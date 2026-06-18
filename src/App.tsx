@@ -117,7 +117,7 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <span className="brand__mark">→</span>
-          <span className="brand__name">Message Bridge</span>
+          <span className="brand__name">OmniBridge</span>
           <span className="brand__tag">конструктор миграции сообщений</span>
         </div>
         <div className="topbar__actions">

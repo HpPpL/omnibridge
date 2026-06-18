@@ -1,9 +1,9 @@
 {
-  "name": "message-bridge",
+  "name": "omnibridge",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Visual builder for migrating incoming messages from VK / Instagram / etc. to Telegram, Slack, Discord.",
+  "description": "Omnichannel visual builder for migrating incoming messages from VK / Instagram / etc. to Telegram, Slack, Discord.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
