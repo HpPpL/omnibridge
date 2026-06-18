@@ -1,20 +1,22 @@
 import http from 'node:http'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { exec } from 'node:child_process'
+import * as readline from 'node:readline/promises'
 import { VkClient, VkApiError } from '../sources/vk-user/client.js'
 
 /**
  * Ловец VK-токена через implicit-flow ТВОЕГО Standalone-приложения.
- * Пароль вводится только на vk.com; скрипт лишь ловит токен из редиректа
- * (через JS-страничку, т.к. фрагмент после # на сервер не уходит) и кладёт в .env.
+ * Пароль вводится только на vk.com; скрипт лишь забирает токен из редиректа.
  *
- *   npm run vk-token -- --app <APP_ID>
+ *   npm run vk-token -- --app <APP_ID>            # авто: localhost-ловец
+ *   npm run vk-token -- --app <APP_ID> --manual   # ручной: вставить URL из адресной строки
  *
- * Перед запуском в настройках приложения добавь Trusted redirect URI:
+ * Авто-режим требует добавить в настройках приложения Trusted redirect URI
  *   http://localhost:8790/callback
+ * Если такого поля в кабинете нет — используй --manual (redirect URI не нужен).
  *
  * Замечание: scope messages новым приложениям VK обычно не выдаёт — тогда токен
- * получишь, но доступа к личке не будет (vk-auth это покажет).
+ * получишь, но доступа к личке не будет (проверка это покажет).
  */
 const API_VERSION = '5.199'
 
@@ -30,10 +32,12 @@ if (!appId) {
   process.exit(1)
 }
 
+const manual = process.argv.includes('--manual')
 const port = Number(arg('port') ?? process.env.VK_AUTH_PORT ?? 8790)
 const scope = arg('scope') ?? 'messages,offline'
 const envPath = arg('env') ?? '.env'
-const redirectUri = `http://localhost:${port}/callback`
+// В ручном режиме редирект на стандартный blank.html — он не требует настройки в кабинете.
+const redirectUri = manual ? 'https://oauth.vk.com/blank.html' : `http://localhost:${port}/callback`
 
 const authorizeUrl =
   'https://oauth.vk.com/authorize?' +
@@ -114,6 +118,26 @@ function upsertEnv(path: string, key: string, value: string): void {
   writeFileSync(path, content)
 }
 
+/** Достаёт токен из вставленного URL (после #access_token=) или принимает голый токен. */
+function extractToken(input: string): string | undefined {
+  const s = input.trim()
+  const m = s.match(/access_token=([^&\s]+)/)
+  if (m) return m[1]
+  // Похоже на сам токен, а не на URL/мусор.
+  if (s && !s.includes('://') && !s.includes('=') && !/\s/.test(s)) return s
+  return undefined
+}
+
+/** Ручной режим: пользователь логинится, копирует URL из адресной строки и вставляет. */
+async function captureManually(): Promise<string | undefined> {
+  console.log('После подтверждения тебя перекинет на страницу oauth.vk.com/blank.html.')
+  console.log('Скопируй URL из адресной строки целиком и вставь сюда.\n')
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
+  const answer = await rl.question('URL (или сам токен): ')
+  rl.close()
+  return extractToken(answer)
+}
+
 async function validate(token: string): Promise<void> {
   const client = new VkClient(token)
   try {
@@ -136,22 +160,32 @@ async function validate(token: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  console.log('1) Добавь в настройках приложения Trusted redirect URI:')
-  console.log(`     ${redirectUri}`)
-  console.log('2) Открой ссылку и подтверди доступ (откроется автоматически):')
-  console.log(`     ${authorizeUrl}\n`)
-  if (process.platform === 'darwin') exec(`open "${authorizeUrl}"`)
+  let token: string | undefined
 
-  const result = await waitForToken()
-  if (!result.token) {
-    console.error(`\n✖ Токен не получен: ${result.error ?? 'неизвестно'}`)
+  if (manual) {
+    console.log('Открой ссылку и подтверди доступ (откроется автоматически):')
+    console.log(`     ${authorizeUrl}\n`)
+    if (process.platform === 'darwin') exec(`open "${authorizeUrl}"`)
+    token = await captureManually()
+  } else {
+    console.log('1) Добавь в настройках приложения Trusted redirect URI:')
+    console.log(`     ${redirectUri}`)
+    console.log('   (если такого поля в кабинете нет — перезапусти с флагом --manual)')
+    console.log('2) Открой ссылку и подтверди доступ (откроется автоматически):')
+    console.log(`     ${authorizeUrl}\n`)
+    if (process.platform === 'darwin') exec(`open "${authorizeUrl}"`)
+    token = (await waitForToken()).token
+  }
+
+  if (!token) {
+    console.error('\n✖ Токен не получен (не нашёл access_token во вставленном тексте).')
     process.exit(2)
   }
 
   console.log('\n✔ Токен получен. Проверяю доступ…')
-  await validate(result.token)
+  await validate(token)
 
-  upsertEnv(envPath, 'VK_USER_TOKEN', result.token)
+  upsertEnv(envPath, 'VK_USER_TOKEN', token)
   console.log(`\n✔ Сохранено в ${envPath} (VK_USER_TOKEN). Дальше: npm run dialogs`)
   process.exit(0)
 }

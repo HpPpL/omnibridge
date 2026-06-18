@@ -21,10 +21,17 @@
 (вход на стороне vk.com, пароль в скрипт не попадает):
 
 ```bash
-# 1. Создай Standalone-приложение на https://dev.vk.com → возьми его ID
-# 2. В настройках приложения добавь Trusted redirect URI: http://localhost:8790/callback
-npm run vk-token -- --app <APP_ID>     # откроет vk.com, поймает токен, сохранит в .env
+# Создай Standalone-приложение на https://dev.vk.com → возьми его ID
+npm run vk-token -- --app <APP_ID> --manual   # надёжно: вставить URL из адресной строки
+npm run vk-token -- --app <APP_ID>            # авто: localhost-ловец (нужен redirect URI)
 ```
+
+- `--manual` — после входа ВК перекинет на `oauth.vk.com/blank.html`, копируешь URL
+  из адресной строки и вставляешь в терминал. **Настройка redirect URI не нужна.**
+- Авто-режим ловит токен сам, но требует прописать в настройках приложения
+  Trusted redirect URI `http://localhost:8790/callback`. Это поле в кабинете VK
+  бывает спрятано (показывается только у типа «Веб-сайт»/VK ID) — если не находишь,
+  бери `--manual`.
 
 > ⚠️ Новым приложениям VK обычно не выдаёт scope `messages` — тогда токен получишь,
 > но доступа к личке не будет (`vk-token` сразу это покажет). Это ограничение
