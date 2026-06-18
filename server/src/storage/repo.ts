@@ -78,6 +78,12 @@ export class Repo {
     }))
   }
 
+  setDialogSelected(accountId: string, dialogId: string, selected: boolean): void {
+    this.db
+      .prepare('UPDATE dialogs SET selected = ? WHERE account_id = ? AND dialog_id = ?')
+      .run(selected ? 1 : 0, accountId, dialogId)
+  }
+
   selectedDialogIds(accountId: string): string[] {
     const rows = this.db
       .prepare('SELECT dialog_id FROM dialogs WHERE account_id = ? AND selected = 1')

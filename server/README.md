@@ -77,6 +77,17 @@ TELEGRAM_CHAT_ID=123456789
 реального VK-токена: `VK_MOCK=1 npm run dialogs/backfill/deliver` — фейковая
 переписка приедет в твоего бота. Выбор собеседников — через `VK_DIALOGS`.
 
+### Управляющий бот (меню)
+
+```bash
+VK_MOCK=1 npm run bot      # держит бота: меню, список диалогов, переключение отслеживания
+```
+
+Команды (видны в меню «/»): `/dialogs` — список диалогов с переключателями
+отслеживания (✅/⬜) и просмотром переписки (👁), `/tracked` — кто отслеживается.
+Нажатие на имя включает/выключает диалог (тот же флаг, что читают `deliver`/`live`).
+Управление разрешено только владельцу — `TELEGRAM_CHAT_ID`.
+
 `npm run live` держит сессию и на каждое новое сообщение из выбранных диалогов:
 сохраняет в хранилище (идемпотентно) и доставляет в назначения. Если Telegram не
 настроен (`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`) — доставка идёт в консоль, отметки
@@ -123,7 +134,8 @@ src/
   sources/vk-user/     личный аккаунт ВК: api, client, mock, live (long poll + мок)
   sources/vk.ts        сообщество ВК (bots long poll)
   destinations/        Telegram, Console (далее Slack, Discord)
-  commands/            CLI: list-dialogs, backfill, export, deliver, live, vk-auth, vk-token
+  telegram/client.ts   Bot API: long polling, кнопки (для управляющего бота)
+  commands/            CLI: list-dialogs, backfill, export, deliver, live, bot, vk-auth, vk-token
 ```
 
 ## TODO

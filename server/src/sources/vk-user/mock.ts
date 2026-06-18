@@ -49,6 +49,22 @@ export class MockVkClient implements VkApi {
   }
 }
 
+// Реалистичные реплики, чтобы в боте было видно осмысленное содержимое.
+const SAMPLE_TEXTS = [
+  'Привет! Как дела?',
+  'Ты сегодня вечером свободен?',
+  'Скинь, пожалуйста, документы по проекту',
+  'Окей, договорились 👍',
+  'Спасибо большое за помощь!',
+  'Во сколько завтра встречаемся?',
+  'Я немного опоздаю, минут на десять',
+  'Уже еду, буду через полчаса',
+  'Глянь это видео, очень смешное 😄',
+  'Отличная работа, всем понравилось!',
+  'Перезвоню тебе через час',
+  'Давай обсудим детали на созвоне',
+]
+
 function buildMessages(accountId: string, d: MockDialog): UnifiedMessage[] {
   const messages: UnifiedMessage[] = []
   for (let seq = d.count; seq >= 1; seq--) {
@@ -62,7 +78,7 @@ function buildMessages(accountId: string, d: MockDialog): UnifiedMessage[] {
       dialogTitle: d.title,
       direction: out ? 'out' : 'in',
       author: { id: out ? String(OWN_ID) : String(d.peerId), name: out ? 'Я' : d.title },
-      text: `Сообщение ${seq} в «${d.title}»`,
+      text: SAMPLE_TEXTS[(seq - 1) % SAMPLE_TEXTS.length]!,
       attachments: seq % 4 === 0 ? [{ type: 'photo' }] : [],
       receivedAt: new Date((BASE_TS - (d.count - seq) * 60) * 1000).toISOString(),
     })
