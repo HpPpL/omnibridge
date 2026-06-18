@@ -13,6 +13,7 @@
     "live": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/run.ts",
     "deliver": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/deliver.ts",
     "bot": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/bot.ts",
+    "serve": "node --experimental-sqlite --disable-warning=ExperimentalWarning --env-file-if-exists=.env --import tsx src/commands/serve.ts",
     "vk-auth": "node --env-file-if-exists=.env --import tsx src/commands/vk-auth.ts",
     "vk-token": "node --env-file-if-exists=.env --import tsx src/commands/vk-token.ts",
     "typecheck": "tsc --noEmit"

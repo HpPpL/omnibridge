@@ -61,12 +61,14 @@ async function main(): Promise<void> {
       console.error('✖ Нет VK_USER_TOKEN (или включи VK_MOCK=1).')
       process.exit(1)
     }
-    source = new VkUserLiveSource('vk_live', new VkClient(token), accountId, new Set(selected))
+    source = new VkUserLiveSource('vk_live', new VkClient(token), accountId)
     console.log('Источник: VK User Long Poll')
   }
   console.log(`Аккаунт ${accountId}, слушаем диалогов: ${selected.length}\n`)
 
+  const tracked = new Set(selected)
   const onMessage = async (m: UnifiedMessage): Promise<void> => {
+    if (!tracked.has(m.dialogId)) return
     m.dialogTitle = m.dialogTitle ?? titles.get(m.dialogId)
     const isNew = repo.saveMessage(m)
     console.log(`[live] ${m.dialogTitle ?? m.dialogId}: "${m.text}"${isNew ? '' : ' (дубль)'}`)

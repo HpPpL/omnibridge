@@ -23,7 +23,6 @@ export class VkUserLiveSource implements Source {
     id: string,
     private readonly client: VkClient,
     private readonly accountId: string,
-    private readonly selected: Set<string>,
   ) {
     this.id = id
   }
@@ -60,8 +59,9 @@ export class VkUserLiveSource implements Source {
           .map((u) => String(u[1]))
         if (ids.length) {
           const messages = await this.client.getById(this.accountId, ids)
+          // Фильтрацию по отслеживаемым диалогам делает потребитель (выбор меняется на лету).
           for (const m of messages) {
-            if (this.selected.has(m.dialogId) && m.direction === 'in') await onMessage(m)
+            if (m.direction === 'in') await onMessage(m)
           }
         }
       } catch (err) {
@@ -102,7 +102,8 @@ export class MockLiveSource implements Source {
 
   async start(onMessage: MessageHandler): Promise<void> {
     this.running = true
-    for (let n = 1; n <= this.opts.count && this.running; n++) {
+    // count <= 0 — бесконечный поток (для долгоживущего serve).
+    for (let n = 1; this.running && (this.opts.count <= 0 || n <= this.opts.count); n++) {
       await delay(this.opts.intervalMs)
       if (!this.running) break
       const dialogId = this.dialogIds[(n - 1) % this.dialogIds.length]!
